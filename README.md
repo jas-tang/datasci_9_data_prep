@@ -109,4 +109,161 @@ The code looks at the first appearance of a value and assigns a number to it sta
 
 I repeated this function for all the dependent and independent variables. This was done manually, but I believe this could be done using a function. 
 
+The final line of the code creates a csv file of all the columns with ordinal scale as test data. 
+
+```
+df.sample(1000).to_csv('/home/jason_tang/datasci_9_data_prep/data/processed/chronic.csv')
+```
+
+I had some issues as my code would just periodically stop. 
+
+![](https://github.com/jas-tang/datasci_9_data_prep/blob/main/images/1.JPG)
+
 This is where I ran into a problem with Google Cloud Shell. Since my dataset was massive, Google Cloud Shell would periodically crash when trying to run this many functions. Upon crashing, I would have to start over again as Google Cloud Shell runs on instances. This led to multiple hours of brute forcing my way through the dataset until I gave up and decided to drastically decrease the dataset. I started over, and used df.sample(5000) as my starting dataset, and the results of each function spit out instantly. In the future, I think I will move over to using Visual Studio Code as Google Cloud Shell is not reliable when it comes to crashes. 
+
+This is what it looked like after doing the transform stage. 
+
+![](https://github.com/jas-tang/datasci_9_data_prep/blob/main/images/2.JPG)
+
+### Compute
+After importing the appropriate packages, we began to create a model using our processed data. 
+
+This specifies our dataset that has become ordinally scaled. 
+```
+df = pd.read_csv('/home/jason_tang/datasci_9_data_prep/data/processed/chronic.csv')
+len(df)
+```
+
+This creates a standardize scale for our model.
+```
+scaler = StandardScaler()
+scaler.fit(X) # Fit the scaler to the features
+pickle.dump(scaler, open('/home/jason_tang/datasci_9_data_prep/data/models/scaler_100k.sav', 'wb'))
+```
+
+
+This trains our model based on our data.
+```
+# Pkle the X_train for later use in explanation
+pickle.dump(X_train, open('/home/jason_tang/datasci_9_data_prep/data/models/X_train_100k.sav', 'wb'))
+# Pkle X.columns for later use in explanation
+pickle.dump(X.columns, open('/home/jason_tang/datasci_9_data_prep/data/models/X_columns_100k.sav', 'wb'))
+```
+
+We then created a baseline model and a Linear Regresion Model. 
+
+```
+##### Create a baseline model using DummyClassifier
+# Initialize the DummyClassifier
+dummy = DummyClassifier(strategy='most_frequent')
+# Train the model on the training set
+dummy.fit(X_train, y_train)
+dummy_acc = dummy.score(X_val, y_val)
+
+
+
+##### Create a Logistic Regression model
+# Initialize the Logistic Regression model
+log_reg = LogisticRegression()
+# Train the model on the training set
+log_reg.fit(X_train, y_train)
+# Predict on the validation set
+y_val_pred = log_reg.predict(X_val)
+# Evaluate the model
+log_reg_acc = log_reg.score(X_val, y_val)
+log_reg_mse = mean_squared_error(y_val, y_val_pred)
+log_reg_r2 = r2_score(y_val, y_val_pred)
+# Print confusion matrix
+print(confusion_matrix(y_val, y_val_pred))
+# Display the classification report
+print(classification_report(y_val, y_val_pred))
+# Print the results
+print('Baseline accuracy:', dummy_acc)
+print('Logistic Regression accuracy:', log_reg_acc)
+print('Logistic Regression MSE:', log_reg_mse)
+print('Logistic Regression R2:', log_reg_r2)
+```
+
+We then used xgboost to create another model. 
+```
+xgboost = XGBClassifier()
+# Train the model on the training set
+xgboost.fit(X_train, y_train)
+# Predict on the validation set
+y_val_pred = xgboost.predict(X_val)
+# Evaluate the model
+xgboost_acc = xgboost.score(X_val, y_val)
+xgboost_mse = mean_squared_error(y_val, y_val_pred)
+xgboost_r2 = r2_score(y_val, y_val_pred)
+# Print confusion matrix
+print(confusion_matrix(y_val, y_val_pred))
+# Display the classification report
+print(classification_report(y_val, y_val_pred))
+# Print the results
+print('Baseline accuracy:', dummy_acc)
+print('Logistic Regression accuracy:', log_reg_acc)
+print('Logistic Regression MSE:', log_reg_mse)
+print('Logistic Regression R2:', log_reg_r2)
+print('XGBoost accuracy:', xgboost_acc)
+print('XGBoost MSE:', xgboost_mse)
+print('XGBoost R2:', xgboost_r2)
+```
+
+And then we started setting up hyperparameters. Hyperparameters are parameters whose values control the learning process and determine the values of model parameters that a learning algorithm ends up learning.
+```
+
+### now lets perform hyperparameter tuning on XGBoost
+# Define the grid of hyperparameters
+param_grid = {
+    # there are 3 hyperparameters we want to tune:
+    # and each hyperparameter has a list of values we want to try that need to be the same length
+    # across all hyperparameters
+    'learning_rate': [0.1, 0.01, 0.001], # learning rate is the step size shrinkage used to prevent overfitting
+    'n_estimators': [100, 200, 300], # number of trees
+    'max_depth': [3, 4, 5], # maximum depth of each tree
+}
+
+# Initialize the XGBoost classifier
+xgboost = XGBClassifier()
+# Initialize GridSearch
+grid_search = GridSearchCV(estimator=xgboost, param_grid=param_grid, cv=3, n_jobs=-1)
+# Fit the estimator
+grid_search.fit(X_train, y_train)
+# Predict on the validation set
+y_val_pred = grid_search.predict(X_val)
+# Evaluate the model
+## Create dataframe of the actual and predicted values
+df_results = pd.DataFrame({'actual': y_val, 'predicted': y_val_pred})
+grid_search_acc = grid_search.score(X_val, y_val)
+grid_search_mse = mean_squared_error(y_val, y_val_pred)
+grid_search_r2 = r2_score(y_val, y_val_pred)
+# Print confusion matrix
+print(confusion_matrix(y_val, y_val_pred))
+# Display the classification report
+print(classification_report(y_val, y_val_pred))
+# Print the results
+print('Baseline accuracy:', dummy_acc)
+print('Logistic Regression accuracy:', log_reg_acc)
+print('XGBoost Model 1 accuracy:', xgboost_acc)
+print('XGBoost Model 2 accuracy:', grid_search_acc)
+```
+
+We print the best hyperparameters, and use those 
+```
+# Print the best parameters and the best score
+print(grid_search.best_params_)
+print(grid_search.best_score_)
+
+
+
+### now lets use the best parameters to train a new model
+# Initialize the XGBoost classifier
+xgboost = XGBClassifier(learning_rate=0.1, max_depth=5, n_estimators=200)
+# Train the model on the training set
+xgboost.fit(X_train, y_train)
+# Predict on the test set
+y_test_pred = xgboost.predict(X_test)
+# Evaluate the model
+xgboost_acc = xgboost.score(X_test, y_test)
+```
+
