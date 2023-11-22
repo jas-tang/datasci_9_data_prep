@@ -267,3 +267,75 @@ y_test_pred = xgboost.predict(X_test)
 xgboost_acc = xgboost.score(X_test, y_test)
 ```
 
+Now we use the SHAP model and the LIME model to explain the predictions made by the ML model. 
+```
+#### feature importance with SHAP
+explainer = shap.TreeExplainer(xgboost)
+explanation = explainer(X_test)
+shape_vlaues = explanation.values
+shap.summary_plot(explanation, X_test, plot_type="bar")
+
+##### feature importance with LIME
+explainer = lime_tabular.LimeTabularExplainer(
+    training_data=X_train,
+    feature_names=X.columns,
+    class_names=['female', 'male'],
+    mode='classification',
+)
+
+# Pick the observation in the validation set for which explanation is required
+observation_1 = 20
+# Get the explanation for Logistic Regression and show the prediction
+exp = explainer.explain_instance(X_val[observation_1], xgboost.predict_proba, num_features=9)
+exp.save_to_file('/home/jason_tang/datasci_9_data_prep/data/models/observation_1.html')
+```
+
+We also save the model itself.
+```
+pickle.dump(xgboost, open('/home/jason_tang/datasci_9_data_prep/data/models/xgboost_100k.sav', 'wb'))
+```
+
+This model probably does not work because the code was designed to predict a dependent variable with only two answers, 0 and 1. Since I did not properly perform the data cleaning portion correctly, there are more than two values for my dependent variable. 
+
+### Testing
+After importing proper packages, we begin to test our non functioning model with random data.
+
+```
+### try and load the model back
+loaded_model = pickle.load(open('/home/jason_tang/datasci_9_data_prep/data/models/xgboost_100k.sav', 'rb'))
+### load scaler
+loaded_scaler = pickle.load(open('/home/jason_tang/datasci_9_data_prep/data/models/scaler_100k.sav', 'rb'))
+
+## now lets create a new dataframe with the same column names and values
+df_test = pd.DataFrame(columns=['yearstart', 'yearend', 'locationabbr', 'topic', 'question',
+       'datavaluetype', 'datavalue', 'stratificationcategory1',
+       'stratification1']
+```
+
+We choose a random ordinal number for each column to predict the dependent variable.
+```
+df_test.loc[0] = [0, 23, 32, 3, 0, 50, 0, 0, 0]
+df_test_scaled = loaded_scaler.transform(df_test)
+```
+
+Now we predict using the test set. 
+```
+y_test_pred = loaded_model.predict(df_test_scaled)
+# print value of prediction
+print(y_test_pred[0])
+```
+
+Of course, I didn't get a result as my model is flawed. I remedied a lot of my issues with Dataset 1 on Dataset 2. Dataset 2 was a lot more successful. 
+
+## Dataset 2
+
+This dataset identified critical areas of research on the global Monkeypox outbreak in the interest of decreasing future outbreaks.
+For my ML preparation, my intention was to predict whether the Agency and Office Name would be either the CDC or the DOE based off the rest of the information. The Agency was my indepedent variable. 
+
+### Extract
+
+Original link: https://healthdata.gov/Health/Monkeypox-Research-Summary-Data/x7kq-cyv4
+
+This dataset was big, but not as large as Dataset 1. 
+
+## Transform 
