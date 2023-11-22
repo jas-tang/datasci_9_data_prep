@@ -339,3 +339,111 @@ Original link: https://healthdata.gov/Health/Monkeypox-Research-Summary-Data/x7k
 This dataset was big, but not as large as Dataset 1. 
 
 ## Transform 
+
+In fear of Google Cloud Shell crashing again, I decided to do my data tranforming in Google Colab in a Notebook. The result should still be the same.
+
+
+I created a dataframe, and looked at the unqiue values for Agency and Office Names. 
+```
+df = pd.read_csv('/content/Monkeypox_Research_Summary_Data.csv')
+df.sample(10)
+
+df['Agency and Office Name'].unique()
+```
+
+I then filtered the dataframe that only included CDC and DOE.
+```
+selected_agencies = ['CDC', 'DOE']
+filtered_df = df[df['Agency and Office Name'].isin(selected_agencies)]
+
+filtered_df.columns
+```
+
+Then, similar to before, I dropped unwanted columns. 
+```
+todrop = [
+    'Upcoming Milestones',
+    'Anticipated Completion',
+    'Brief Description',
+    'Project Link']
+
+filtered_df.drop(todrop, axis=1, inplace=True, errors='ignore')
+```
+
+I also cleaned and lowercased the columns.
+```
+df.columns = df.columns.str.lower().str.replace(' ', '_')
+```
+
+Now, my dataset is much smaller. I then performed ordinal encoding and mapping, similar to Dataset 1. 
+```
+## perform ordinal encoding on research_activity
+enc = OrdinalEncoder()
+enc.fit(df[['research_activity']])
+df['research_activity'] = enc.transform(df[['research_activity']])
+
+## create dataframe with mapping
+df_mapping_research_activity = pd.DataFrame(enc.categories_[0], columns=['research_activity'])
+df_mapping_research_activity['research_activity_ordinal'] = df_mapping_research_activity.index
+df_mapping_research_activity
+
+## save mapping to csv
+df_mapping_research_activity.to_csv('/home/jason_tang/datasci_9_data_prep/Data/processed/mapping_research_activity.csv', index=False)
+```
+I repeated this process for the rest of the remaining columns. 
+
+Finally, I saved a CSV of the dataset after the ordinal encoding and mapping.
+```
+df_mapping_status.to_csv('/home/jason_tang/datasci_9_data_prep/Data/processed/mapping_status.csv', index=False)
+```
+
+### Compute
+I performed the same preparation tasks for Dataset 1 as to Dataset 2. Please see my code for Dataset 2 to see what was done. 
+In summary, we featured our independent variable, which now has two values.
+```
+# Define the features and the target variable
+X = df.drop('agency_and_office_name', axis=1)  
+y = df['agency_and_office_name']               
+```
+
+We then scaled the data and created a base and linear regression model. We used XGBoost the create another model, and set up and found viable hyperparameters. We then used SHAP and LIME to be able to interprete ML models. 
+
+### Test
+
+We load our created model back in. 
+```
+### try and load the model back
+loaded_model = pickle.load(open('/home/jason_tang/datasci_9_data_prep/Data/models/xgboost_100k.sav.sav', 'rb'))
+### load scaler
+loaded_scaler = pickle.load(open('/home/jason_tang/datasci_9_data_prep/Data/models/scaler_100k.sav', 'rb'))
+```
+
+Then we create a dataframe that contains our dependent variables.
+```
+df_test = pd.DataFrame(columns=[['research_activity', 'project_title', 'topic','countries', 'status']]
+```
+
+We create a fake dataset and apply the scalar to it. 
+```
+## research_activity = 0 (Animal reservoirs)
+## project_title = 0 (Assessing mpox infections in animals associated with human cases)
+## topic = 0 (Epidemiology
+## countries = 0 
+## status = 0 
+
+
+df_test.loc[0] = [0,0,0,0,0]
+df_test_scaled = loaded_scaler.transform(df_test)
+```
+
+Then we run the prediction model. 
+```
+# Predict on the test set
+y_test_pred = loaded_model.predict(df_test_scaled)
+# print value of prediction
+print(y_test_pred[0])
+```
+
+The result we got was [0], which corresponds with the CDC. The interpretation of this is that given the fake dataset of every ordinal scale being [0], meaning that it is an animal reservoir, its assessing human infection, topic of epidemiology, with no country or status given, there is a likelihood of the study being performed by the CDC. 
+
+The dataset trained on was reduced to a very small amount, so its is highly possible that the model is not accurate. However, the model functions properly. 
