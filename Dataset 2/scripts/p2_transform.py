@@ -118,5 +118,3 @@ df_mapping_status
 df_mapping_status.to_csv('/home/jason_tang/datasci_9_data_prep/Data/processed/mapping_status.csv', index=False)
 
 
-
-
