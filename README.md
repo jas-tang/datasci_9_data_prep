@@ -9,7 +9,7 @@ This dataset looked at the occurence and indication of chronic diseases in Metro
 ### Extract 
 I initially tried to prep for ML with this dataset. The result isn't what I wanted, but I attempted it nonetheless. 
 
-Originial link: https://catalog.data.gov/dataset/u-s-chronic-disease-indicators-cdi
+[Originial link](https://catalog.data.gov/dataset/u-s-chronic-disease-indicators-cdi)
 
 ### Transform
 This dataset was massive, so much so that it was causing issues in Google Cloud Shell. For the following tasks, whenever I tried to transform the data, 
@@ -334,7 +334,7 @@ For my ML preparation, my intention was to predict whether the Agency and Office
 
 ### Extract
 
-Original link: https://healthdata.gov/Health/Monkeypox-Research-Summary-Data/x7kq-cyv4
+[Original link](https://healthdata.gov/Health/Monkeypox-Research-Summary-Data/x7kq-cyv4)
 
 This dataset was big, but not as large as Dataset 1. 
 
@@ -447,3 +447,5 @@ print(y_test_pred[0])
 The result we got was [0], which corresponds with the CDC. The interpretation of this is that given the fake dataset of every ordinal scale being [0], meaning that it is an animal reservoir, its assessing human infection, topic of epidemiology, with no country or status given, there is a likelihood of the study being performed by the CDC. 
 
 The dataset trained on was reduced to a very small amount, so its is highly possible that the model is not accurate. However, the model functions properly. 
+
+![](https://github.com/jas-tang/datasci_9_data_prep/blob/main/images/3.JPG)
