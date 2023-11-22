@@ -4,7 +4,8 @@ from sklearn.preprocessing import OrdinalEncoder
 datalink = 'https://data.cdc.gov/api/views/g4ie-h725/rows.csv?accessType=DOWNLOAD'
 
 df = pd.read_csv(datalink)
-
+df = df.sample(5000)
+df
 ## get column names
 df.columns
 
